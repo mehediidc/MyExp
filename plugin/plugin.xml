@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        id="myexpenses-native"
+        version="1.0.1">
+    <name>MyExpensesNative</name>
+    <description>Native print and backup support for MyExpenses</description>
+    <license>MIT</license>
+    <keywords>cordova,print,backup,myexpenses</keywords>
+
+    <js-module src="www/myexpenses-native.js" name="MyExpensesNative">
+        <clobbers target="window.MyExpensesNative" />
+    </js-module>
+
+    <platform name="android">
+        <source-file src="src/android/MyExpensesNative.java"
+                     target-dir="src/com/mhdigital/myexpenses/nativeplugin" />
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="MyExpensesNative">
+                <param name="android-package" value="com.mhdigital.myexpenses.nativeplugin.MyExpensesNative"/>
+            </feature>
+        </config-file>
+    </platform>
+</plugin>
