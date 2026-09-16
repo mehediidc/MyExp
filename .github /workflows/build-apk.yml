@@ -1,0 +1,89 @@
+name: Build MyExpenses APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v5
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Install Cordova
+        run: npm install -g cordova@12
+
+      - name: Install project dependencies
+        run: npm install
+
+      - name: Add Android platform
+        run: cordova platform add android@13
+
+      - name: Add local native plugin
+        run: cordova plugin add ./plugin
+
+      - name: Build Debug APK
+        run: cordova build android --debug --verbose
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          JAVA_HOME: ${{ env.JAVA_HOME }}
+
+      - name: Find APK
+        id: find_apk
+        shell: bash
+        run: |
+          APK=$(find platforms/android -type f -name "*.apk" | head -n 1)
+          if [ -z "$APK" ]; then
+            echo "ERROR: APK was not created."
+            exit 1
+          fi
+          echo "Found APK: $APK"
+          echo "apk_path=$APK" >> "$GITHUB_OUTPUT"
+          ls -lh "$APK"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyExpenses-debug-apk
+          path: ${{ steps.find_apk.outputs.apk_path }}
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v4.1.1-${{ github.run_number }}
+          name: MyExpenses 4.1.1 Build ${{ github.run_number }}
+          body: |
+            Automatic MyExpenses APK build.
+            - Debug APK
+            - Fully offline
+            - Local storage
+            - Entry saving
+            - Printing support
+          files: ${{ steps.find_apk.outputs.apk_path }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
